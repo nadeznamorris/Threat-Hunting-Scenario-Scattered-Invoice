@@ -2,11 +2,11 @@
 
 ## RDP Compromise Incident
 
-**Report ID:** INC-2026-0404
+**Report ID:** INC-2026-1104
 
 **Analyst:** Nadezna Morris
 
-**Date:** 04-April-2026
+**Date:** 11-April-2026
 
 **Incident Date:** 10-Febuary-2026
 
@@ -26,6 +26,238 @@
 
 ---
 
+***FLAG 0. Scattered Spider/ Environment Access***
+
+**Objective:** Confirm you have access. What is the name of the Sentinel workspace containing the investigation data?
+
+**Flag:** `law-cyber-range`
+
+
+---
+
+**Objective:** Before you can investigate, confirm the compromised identity. Query SigninLogs for the user identified in the incident.
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
+
+
+
+
+
+**Objective:**  
+
+**Flag:**
 
 ---
 
@@ -55,6 +287,6 @@
 
 **Report Status:** Complete
 
-**Next Review:** 11-April-2026
+**Next Review:** 18-April-2026
 
 **Distribution:** Cyber Range
