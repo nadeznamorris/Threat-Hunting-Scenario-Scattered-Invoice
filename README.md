@@ -2,17 +2,19 @@
 
 ## RDP Compromise Incident
 
-**Report ID:** INC-2026-1104
+**Report ID:** IR-2026-0225-BEC
 
 **Analyst:** Nadezna Morris
 
 **Date:** 11-April-2026
 
-**Incident Date:** 10-Febuary-2026
+**Incident Date:** 25-Febuary-2026
 
 ---
 
 ## Executive Summary
+
+On 25 February 2026, finance employee Mark Smith (`m.smith@lognpacific.org`) was targeted with an MFA fatigue (push bombing) attack, receiving repeated sign-in approval prompts while at home. After denying three requests, he approved a fourth to stop the notifications, unknowingly granting a threat actor access to his account from an IP address in the Netherlands (205.147.16.190). The attacker authenticated to One Outlook Web from a Linux device running Firefox — a stark contrast to Mark's usual Windows corporate endpoint — and no Conditional Access policy blocked the sign-in. Within the same session, the attacker read Mark's mailbox, created two malicious inbox rules (one to silently forward financially themed emails to an external address, `insights@duck.com`, and one to delete security/breach-related alerts), accessed SharePoint and OneDrive content, and sent a thread-hijacked email to `j.reynolds@lognpacific.org` posing as Mark with updated banking details on an existing invoice thread. Finance processed the fraudulent payment believing it followed standard verification procedure, resulting in a £24,500 wire transfer to attacker-controlled banking details, which was subsequently frozen by the receiving bank. The tactics, techniques, and procedures observed — MFA fatigue, inbox rule persistence for defence evasion, BEC targeting finance via thread hijacking, and use of anonymising/VPN infrastructure — are consistent with the threat group **Scattered Spider**, previously linked to attacks on MGM Resorts and Caesars Entertainment.
 
 ---
 
@@ -20,9 +22,18 @@
 
 ### **Key Indicators of Compromise (IOCs):**
 
-| Type             | Indicator                     |
-| ---------------- | ------------------------------|
-
+| Type                    | Indicator                                                    | Description                                                            |
+| ----------------------- | -------------------------------------------------------------| ---------------------------------------------------------------------- |
+| Attacker IP             | 205.147.16.190`                                              | Geolocates to Netherlands (NL); used for sign-in, mailbox access, and BEC email send |
+| Exfil destination       | `insights@duck.com`                                          | `ForwardTo` address on malicious inbox rule                            |
+| Inbox rule name         | `.`                                                          | First rule — forwards financial-keyword emails externally              |
+| Inbox rule name         | `..`                                                         | Second rule — deletes security-alert emails                            |
+| Rule keywords           | `invoice, payment, wire, transfer`                           | SubjectOrBodyContainsWords on forwarding rule                          |
+| Rule keywords           | suspicious, security, phishing, unusual, compromised, verify | Keywords on deletion rule (hiding breach evidence)                     |
+| Session ID              | 00225cfa-a0ff-fb46-a079-5d152fcdf72a                         | AAD session tying sign-in, inbox rules, and email activity together    |
+| Device & UA fingerprint | Linux / Firefox 147.0                                        | Anomalous vs. Mark's normal Windows managed device                     |
+| BEC subject             | RE: Invoice #INV-2026-0892 - Updated Banking Details         | Thread-hijacked email to j.reynolds@lognpacific.org                    |
+| Auth signal             | Error code 50074                                             | MFA required but not satisfied — precedes fatigue attack pattern       |
 
 ---
 
@@ -328,25 +339,68 @@
 
 ## 2. Investigation Summary
 
+**Identity & Initial Access:** Baselining `SigninLogs` for `m.smith@lognpacific.org` showed legitimate authentications aligned with expected geography and working hours prior to the attack window. On the evening of 25 February, sign-in attempts began originating from `205.147.16.190` (NL) — a location inconsistent with Mark's normal activity. Multiple attempts returned error code **50074** (MFA required, not satisfied), reflecting **3 denied push notifications** before Mark approved one, completing the MFA fatigue attack (T1621).
+
+**Post-Auth Access:** The successful sign-in authenticated to **One Outlook Web**, consistent with browser-based remote access rather than a native desktop client. Device telemetry showed a **Linux** host running **Firefox 147.0** — diverging from Mark's managed Windows endpoint on three anomaly layers: IP/geography, device OS, and browser. Notably, `ConditionalAccessStatus` on this sign-in was **notApplied**, meaning no CA policy intervened to block or challenge the anomalous session.
+
+**Mailbox Activity (CloudAppEvents):** Sorted by time ascending, the attacker's first action was **MailItemsAccessed** — reconnaissance of the mailbox before taking further action. The attacker then created two inbox rules via New-InboxRule:  
+- Rule `.` — forwards mail containing `invoice, payment, wire, transfer` to `insights@duck.com`, with `StopProcessingRules` set to suppress any subsequent (including the victim's own) rule evaluation.
+- Rule `..` — deletes mail containing `suspicious, security, phishing, unusual, compromised, verify`, suppressing security alerts and breach notifications from ever reaching the inbox view.
+
+**Lateral Data Access:** The same attacker IP was observed accessing **Microsoft OneDrive for Business** (file access ActionTypes) and authenticating to **Microsoft SharePoint Online**, indicating the compromise extended beyond email into document repositories.
+
+**BEC Payload:** Pivoting into `EmailEvents` filtered on sender `m.smith@lognpacific.org` and the attacker IP identified an **Intra-org** email sent to `j.reynolds@lognpacific.org`, subject "`RE: Invoice #INV-2026-0892 - Updated Banking Details`" — a reply injected into an existing thread (thread hijacking) rather than a new message, lending it credibility. The SenderIPv4 on this email matched the attacker's sign-in IP (`205.147.16.190`), confirming the same authenticated session was used both to access the mailbox and to send the fraudulent instruction.
+
+**Session Correlation:** The `AADSessionId` (`00225cfa-a0ff-fb46-a079-5d152fcdf72a`) recovered from the inbox rule `RawEventData.AppAccessContext` matched the `SessionId` on the attacker's successful sign-in in `SigninLogs`, confirming a single continuous session was responsible for authentication, mailbox reconnaissance, rule creation, data access, and email fraud.
+
+**Outcome:** Finance received the spoofed intra-org email appearing to come from a trusted colleague with updated bank details on a real, in-progress invoice, and processed a £24,500 payment per normal procedure. The receiving bank's fraud controls flagged and froze the transfer before final settlement.
 
 ---
 
 ## 3. MITRE ATT&CK Mapping
 
-| Tactic               | Technique                                                                                  | Evidence                                    |
-| -------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------- |
-
-
+| Tactic                             | Technique                                                                                  | Evidence                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------- |
+| Resource Development               | T1586 / T1589 - Compromise Accounts / Gather Victim Identity Information | Attacker likely obtained initial valid credentials via infostealer-harvested data prior to the attack|
+| Initial Access                     | T1078 - Valid Accounts                                                   | Attacker authenticated as m.smith@lognpacific.org using compromised (but valid) credentials |
+| Initial Access / Credential Access | T1621 - Multi-Factor Authentication Request Generation                   | Repeated MFA push prompts sent to Mark Smith's device; 3 denied, 4th approved (MFA fatigue) |
+| Defense Evasion                    | T1078.004 - Valid Accounts: Cloud Accounts                               | Use of a legitimate, authenticated cloud identity to blend in with normal activity |
+| Defense Evasion                    | T1564.008 - Hide Artifacts: Email Hiding Rules                           | Two inbox rules created — one forwarding financial emails externally, one deleting security alerts |
+| Defense Evasion                    | T1070 - Indicator Removal                                                | Deletion rule (..) removes security/phishing/compromise-related emails to hide evidence of the intrusion |
+| Persistence                        | T1098.002 - Account Manipulation: Additional Email Delegate Permissions / Mailbox Rules | Inbox rules (New-InboxRule) established persistent, silent access to future incoming mail |
+| Collection                         | T1114 - Email Collection                                                 | MailItemsAccessed — attacker read mailbox contents immediately after authentication |
+| Collection                         | T1114.003 - Email Collection: Email Forwarding Rule                      | Forwarding rule (.) auto-sends invoice/payment/wire/transfer emails to insights@duck.com |
+| Collection                         | T1213 - Data from Information Repositories                               | Access to Microsoft OneDrive for Business and SharePoint Online during the session |
+| Command and Control                | T1090 - Proxy                                                            | Attacker IP (205.147.16.190, NL) inconsistent with victim's normal geography, suggesting VPN/proxy infrastructure |
+| Impact                             | T1657 - Financial Theft                                                  | Thread-hijacked BEC email led to a fraudulent £24,500 wire transfer |
 
 ---
 
 ## 4. Recommendations
 
 ### Immediate Action  
+- Revoke all active sessions and refresh tokens for m.smith@lognpacific.org (invalidates session 00225cfa-a0ff-fb46-a079-5d152fcdf72a).
+- Force password reset and re-enrol MFA for the compromised account.
+- Delete both malicious inbox rules (. and ..) and audit all mailboxes org-wide for similarly named/suspicious rules.
+- Block/blacklist attacker IP 205.147.16.190 and domain duck.com (or the specific address insights@duck.com) at the email gateway and firewall.
+- Notify the bank and initiate formal recall/fraud dispute for the £24,500 transfer; confirm freeze status with receiving bank.
+- Alert j.reynolds@lognpacific.org and finance team; place a hold on any further payments referencing INV-2026-0892 pending manual verification.
 
 ### Short-term Remediation  
+- Enable number-matching MFA and disable simple push-approval to mitigate future MFA fatigue attacks.
+- Deploy Conditional Access policies requiring compliant/managed devices and blocking or challenging sign-ins from unfamiliar geographies (address the notApplied gap identified).
+- Enable alerting on inbox rule creation containing forwarding to external domains and/or matching high-risk keyword patterns.
+- Review and audit OneDrive/SharePoint access logs for the compromised account for data exfiltration scope.
+- Conduct targeted user awareness training on MFA fatigue and BEC/thread-hijacking tactics for finance staff.
+- Implement out-of-band verification for any banking/payment detail changes (e.g., phone callback to a known-good number).
 
 ### Long-term Remediation 
+- Deploy a risk-based sign-in policy (e.g., Identity Protection) to automatically flag/block impossible-travel and anomalous device sign-ins.
+- Implement DMARC/DKIM/SPF enforcement and internal anti-spoofing controls even for intra-org mail flows.
+- Establish a continuous hunting use case for New-InboxRule / Set-InboxRule events with external forwarding or security-keyword deletion patterns.
+- Review third-party credential exposure (infostealer log monitoring) via dark web/credential-monitoring services, given this threat actor's known reliance on purchased infostealer-harvested credentials.
+- Formalise a payment verification policy (dual-approval + callback verification for any bank detail changes) across all vendor/finance workflows.
+- Conduct a tabletop exercise simulating Scattered Spider TTPs (MFA fatigment, help-desk social engineering, BEC) to validate detection and response readiness.
 
 ---
 
