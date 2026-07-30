@@ -379,25 +379,25 @@ On 25 February 2026, finance employee Mark Smith (`m.smith@lognpacific.org`) was
 ## 4. Recommendations
 
 ### Immediate Action  
-- Revoke all active sessions and refresh tokens for m.smith@lognpacific.org (invalidates session 00225cfa-a0ff-fb46-a079-5d152fcdf72a).
+- Revoke all active sessions and refresh tokens for `m.smith@lognpacific.org` (invalidates session `00225cfa-a0ff-fb46-a079-5d152fcdf72a`).
 - Force password reset and re-enrol MFA for the compromised account.
-- Delete both malicious inbox rules (. and ..) and audit all mailboxes org-wide for similarly named/suspicious rules.
-- Block/blacklist attacker IP 205.147.16.190 and domain duck.com (or the specific address insights@duck.com) at the email gateway and firewall.
+- Delete both malicious inbox rules (`.` and `..`) and audit all mailboxes org-wide for similarly named/suspicious rules.
+- Block/blacklist attacker IP `205.147.16.190` and domain `duck.com` (or the specific address `insights@duck.com`) at the email gateway and firewall.
 - Notify the bank and initiate formal recall/fraud dispute for the £24,500 transfer; confirm freeze status with receiving bank.
-- Alert j.reynolds@lognpacific.org and finance team; place a hold on any further payments referencing INV-2026-0892 pending manual verification.
+- Alert `j.reynolds@lognpacific.org` and finance team; place a hold on any further payments referencing INV-2026-0892 pending manual verification.
 
 ### Short-term Remediation  
-- Enable number-matching MFA and disable simple push-approval to mitigate future MFA fatigue attacks.
-- Deploy Conditional Access policies requiring compliant/managed devices and blocking or challenging sign-ins from unfamiliar geographies (address the notApplied gap identified).
+- Enable **number-matching MFA** and disable simple push-approval to mitigate future MFA fatigue attacks.
+- Deploy **Conditional Access** policies requiring compliant/managed devices and blocking or challenging sign-ins from unfamiliar geographies (address the `notApplied` gap identified).
 - Enable alerting on inbox rule creation containing forwarding to external domains and/or matching high-risk keyword patterns.
 - Review and audit OneDrive/SharePoint access logs for the compromised account for data exfiltration scope.
 - Conduct targeted user awareness training on MFA fatigue and BEC/thread-hijacking tactics for finance staff.
 - Implement out-of-band verification for any banking/payment detail changes (e.g., phone callback to a known-good number).
 
 ### Long-term Remediation 
-- Deploy a risk-based sign-in policy (e.g., Identity Protection) to automatically flag/block impossible-travel and anomalous device sign-ins.
-- Implement DMARC/DKIM/SPF enforcement and internal anti-spoofing controls even for intra-org mail flows.
-- Establish a continuous hunting use case for New-InboxRule / Set-InboxRule events with external forwarding or security-keyword deletion patterns.
+- Deploy a **risk-based sign-in policy** (e.g., Identity Protection) to automatically flag/block impossible-travel and anomalous device sign-ins.
+- Implement **DMARC/DKIM/SPF** enforcement and internal anti-spoofing controls even for intra-org mail flows.
+- Establish a continuous hunting use case for **New-InboxRule / Set-InboxRule** events with external forwarding or security-keyword deletion patterns.
 - Review third-party credential exposure (infostealer log monitoring) via dark web/credential-monitoring services, given this threat actor's known reliance on purchased infostealer-harvested credentials.
 - Formalise a payment verification policy (dual-approval + callback verification for any bank detail changes) across all vendor/finance workflows.
 - Conduct a tabletop exercise simulating Scattered Spider TTPs (MFA fatigment, help-desk social engineering, BEC) to validate detection and response readiness.
